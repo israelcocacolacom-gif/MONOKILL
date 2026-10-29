@@ -1,7 +1,6 @@
 services:
   - type: web
     name: monokill-online
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    runtime: static
+    buildCommand: echo "Sin build"
+    staticPublishPath: ./MONOKILL_web_publico
