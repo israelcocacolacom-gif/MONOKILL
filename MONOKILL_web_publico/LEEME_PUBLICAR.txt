@@ -1,0 +1,29 @@
+MONOKILL — PAQUETE PARA PUBLICAR ONLINE GRATIS (PROTOTIPO)
+=========================================================
+
+IMPORTANTE
+Este paquete está preparado para desplegarse como un servicio Node.js en un proveedor compatible, por ejemplo Render. No está publicado todavía: para obtener una URL pública hay que subirlo a una cuenta propia y completar el despliegue.
+
+QUÉ INCLUYE
+- El juego MONOKILL con diseño para PC y móvil.
+- Conexión multijugador por WebSocket: usa ws:// en HTTP y wss:// automáticamente en HTTPS.
+- Configuración de despliegue para Render (render.yaml).
+- No se ha añadido música nueva.
+
+CÓMO PUBLICARLO EN RENDER
+1. Crea una cuenta en GitHub y una cuenta en Render, si no las tienes. No compartas contraseñas ni códigos con nadie.
+2. En GitHub, crea un repositorio nuevo llamado MONOKILL y súbele TODOS los archivos de esta carpeta, incluyendo render.yaml.
+3. En Render, elige New > Blueprint (si aparece) y conecta el repositorio MONOKILL. Render detectará render.yaml. Si no aparece Blueprint, crea New > Web Service y selecciona el repositorio.
+4. Si lo configuras manualmente, usa:
+   - Runtime/Language: Node
+   - Build command: npm install
+   - Start command: npm start
+   - Plan: Free
+5. Pulsa desplegar y espera a que termine. Render mostrará una dirección parecida a https://monokill-online.onrender.com (el nombre exacto puede cambiar).
+6. Abre esa dirección en el PC y en los móviles. Todos necesitan Internet, pero NO la misma Wi-Fi. Pulsa CONECTAR AL MULTIJUGADOR en cada dispositivo.
+
+LÍMITES IMPORTANTES
+- El plan gratuito de Render puede dormir tras 15 minutos sin tráfico y tardar alrededor de un minuto en despertar.
+- Es un prototipo: sincroniza presencia, posición y orientación de jugadores. Los enemigos, disparos, daño, puntuación y oleadas todavía no forman una partida completamente sincronizada.
+- No guardes información personal en el nombre del jugador.
+- No se garantiza que el nombre exacto de la URL esté disponible.

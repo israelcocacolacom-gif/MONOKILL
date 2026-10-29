@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MONOKILL</title>
+<style>
+:root{--bg:#000;--fg:#fff}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);touch-action:none;font-family:"Courier New",monospace;overflow:hidden;user-select:none}
+canvas{display:block}
+.f{position:fixed}
+#info{left:16px;top:12px;font-size:16px;letter-spacing:2px}
+#rank{right:24px;top:40px;font-size:84px;font-weight:bold;text-align:right;line-height:1}
+#sbar{right:24px;top:20px;width:160px;height:10px;border:2px solid var(--fg)}
+#sbar i,#bb i{display:block;height:100%;background:var(--fg);width:0}
+#bb{left:30%;width:40%;top:46px;height:14px;border:2px solid var(--fg);display:none}
+#bars{left:16px;bottom:16px;width:260px}
+.bar{height:16px;border:2px solid var(--fg);margin-top:6px}
+.bar i{display:block;height:100%;background:var(--fg);width:100%}
+.bar.s{height:8px}
+#cross{left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;pointer-events:none}
+#flash{inset:0;background:#fff;mix-blend-mode:difference;opacity:0;pointer-events:none}
+#banner{left:0;right:0;top:22%;text-align:center;font-size:44px;letter-spacing:8px;opacity:0;pointer-events:none}
+#msg{inset:0;display:flex;pointer-events:none}
+#pn{pointer-events:auto;width:330px;max-width:90vw;height:100%;overflow-y:auto;box-sizing:border-box;background:rgba(0,0,0,.88);padding:18px;border-right:2px solid var(--fg)}
+#pn h1{font-size:38px;letter-spacing:6px;margin:0 0 8px}
+#pn h3{margin:14px 0 6px;border-bottom:1px solid var(--fg)}
+#pn p{font-size:13px;line-height:1.6}
+button{display:block;width:100%;margin:6px 0;padding:10px;background:#000;color:var(--fg);border:2px solid var(--fg);font:bold 16px "Courier New",monospace;cursor:pointer}
+button:hover{background:var(--fg);color:var(--bg)}
+label{display:block;margin:6px 0;font-size:13px}
+input[type=range]{width:100%}
+select{background:#000;color:#fff;border:1px solid #fff;font:inherit}
+
+/* Mejoras móviles */
+#touchUI{display:none;position:fixed;inset:0;z-index:5;pointer-events:none}
+.touchBtn{pointer-events:auto;position:absolute;width:64px;height:64px;border:2px solid #fff;border-radius:50%;background:rgba(0,0,0,.48);color:#fff;font:bold 13px "Courier New",monospace;touch-action:none;user-select:none}
+#joyBase{pointer-events:auto;position:absolute;left:22px;bottom:26px;width:138px;height:138px;border:2px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(255,255,255,.08);touch-action:none}
+#joyKnob{position:absolute;left:42px;top:42px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.55);border:1px solid #fff}
+#fireBtn{right:22px;bottom:38px;width:82px;height:82px}
+#jumpBtn{right:116px;bottom:36px}
+#dashBtn{right:30px;bottom:134px}
+#slamBtn{right:116px;bottom:116px}
+#lookHint{position:absolute;right:18px;top:18px;font-size:11px;opacity:.7}
+
+#profileBox{border:1px solid #777;padding:10px;margin:10px 0;background:rgba(255,255,255,.04)}
+#username{width:100%;box-sizing:border-box;background:#050505;color:#fff;border:1px solid #aaa;padding:10px;font:14px "Courier New",monospace}
+#editorPanel{position:fixed;right:12px;top:12px;width:310px;max-height:calc(100vh - 24px);overflow:auto;z-index:20;background:rgba(0,0,0,.92);border:2px solid white;padding:12px;box-sizing:border-box;display:none}
+#editorPanel h2{font-size:18px;margin:0 0 8px}
+#editorPanel button{font-size:12px;padding:7px;margin:4px 0}
+#editorPanel .small{font-size:11px;line-height:1.5}
+#editorPanel input[type=number]{width:60px;background:#000;color:#fff;border:1px solid #888;padding:5px}
+#editorPanel select{width:100%;padding:6px}
+#mapName{width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #888;padding:7px;font:12px "Courier New",monospace}
+#editorPanel .hint{color:#ccc;font-size:10px;line-height:1.4}
+#editorPanel input[type=text]{width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #888;padding:6px}
+#editorPanel .two{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+#editorPanel .two button{width:100%}
+#editorStatus{font-size:11px;line-height:1.4;color:#ddd;white-space:pre-wrap}
+@media (pointer:coarse),(max-width:800px){
+ #editorPanel{display:none!important}
+
+ #touchUI{display:block}
+ #info{font-size:11px;letter-spacing:1px;left:8px;top:8px;max-width:55vw}
+ #rank{font-size:42px;right:10px;top:38px}
+ #sbar{right:10px;top:12px;width:95px}
+ #bars{left:8px;bottom:8px;width:130px}
+ #banner{font-size:25px;letter-spacing:3px}
+ #pn{width:100%;max-width:100vw;padding:16px}
+ #pn h1{font-size:30px}
+ button{padding:12px}
+}
+</style></head><body>
+<div class="f" id="info"></div><div class="f" id="sbar"><i id="sb"></i></div><div class="f" id="rank"></div>
+<div class="f" id="bb"><i id="bbi"></i></div>
+<div class="f" id="bars"><div class="bar"><i id="hpb"></i></div><div class="bar s"><i id="stb"></i></div></div>
+<div class="f" id="cross">+</div><div class="f" id="flash"></div><div class="f" id="banner"></div>
+<div id="touchUI" aria-label="Controles táctiles">
+ <div id="joyBase"><div id="joyKnob"></div></div>
+ <button class="touchBtn" id="fireBtn">DISPARAR</button>
+ <button class="touchBtn" id="jumpBtn">SALTAR</button>
+ <button class="touchBtn" id="dashBtn">DASH</button>
+ <button class="touchBtn" id="slamBtn">GOLPE</button>
+ <div id="lookHint">Desliza aquí para mirar</div>
+</div>
+<div class="f" id="msg"><div id="pn">
+<h1 id="mt">MONOKILL</h1><p id="mp"></p>
+<div id="profileBox">
+ <label for="username">NOMBRE DE USUARIO (obligatorio)</label>
+ <input id="username" maxlength="18" autocomplete="nickname" placeholder="Escribe tu nombre..." />
+ <p id="profileHint" style="font-size:11px;margin:6px 0 0">Tu nombre aparecerá en el juego y en las futuras salas multijugador.</p>
+</div>
+<button id="bC" style="display:none">CONTINUAR</button>
+<button id="bI">MODO INFINITO</button><button id="bL">MODO NIVELES</button><button id="bT">MODO PRÁCTICA (SIN RECIBIR DAÑO)</button><h3>MULTIJUGADOR ONLINE</h3><p style="font-size:11px">Abre esta misma página desde cualquier PC o móvil con Internet. Pulsa conectar para ver a los jugadores que estén en el mismo servidor. Esta versión sincroniza la posición y orientación de los jugadores.</p><button id="connectLocal">CONECTAR AL MULTIJUGADOR</button><p id="mpStatus" style="font-size:11px">Sin conectar. Pulsa el botón cuando la página esté abierta desde el servidor online.</p>
+<h3>AJUSTES</h3>
+<label><input id="mobileControlsToggle" type="checkbox" checked> ACTIVAR CONTROLES PARA MÓVIL</label>
+<p style="font-size:11px">Puedes activarlos o desactivarlos aquí. En PC puedes seguir usando teclado y ratón.</p>
+<label>FOV <input id="sf" type="range" min="60" max="120"></label>
+<label>SENSIBILIDAD <input id="ss" type="range" min="1" max="10"></label>
+<label><input id="st" type="checkbox"> TERCERA PERSONA (tecla V)</label>
+<h3>PERSONAJE</h3>
+<label>CUERPO <select id="cb"></select></label><label>CABEZA <select id="ch"></select></label>
+<label>ACCESORIO / GORRO <select id="ca"></select></label><label>COLOR <select id="cc"></select></label>
+<h3>CREACIÓN DE MAPAS</h3>
+<p>El editor 3D de mapas está disponible solamente en PC.</p>
+<button id="openEditor">ABRIR EDITOR 3D (SOLO PC)</button>
+<h3>CONTROLES</h3>
+<p>WASD mover · ESPACIO saltar · SHIFT dash (invulnerable)<br>C en el aire: golpe al suelo · CLIC: disparar<br>1-4 o rueda: cambiar arma · V: cámara · P: pausa<br>Flechas: girar si el ratón no se captura.<br>Un jefe aparece cada 10 oleadas (modo infinito). En MODO PRÁCTICA no recibes daño.</p>
+</div></div>
+<div id="editorPanel" aria-label="Editor 3D de mapas">
+ <h2>MONOKILL · EDITOR 3D</h2>
+ <p class="small">Editor 3D con cuadrícula plana y cámara libre. PC: WASD para moverte, ratón derecho + arrastrar para mirar, rueda para cambiar velocidad/distancia. Haz clic una vez en cualquier bloque o marcador para seleccionarlo. Los marcadores enemigos se animan en el editor.</p>
+ <label>Objeto para añadir</label>
+ <select id="editorType"><option value="floor">Suelo plano</option><option value="box">Bloque</option><option value="enemy_f">Aparición: enemigo básico</option><option value="enemy_s">Aparición: enemigo flotante</option><option value="enemy_b">Aparición: enemigo pesado</option><option value="enemy_B">Aparición: JEFE</option><option value="light">Marcador luminoso</option></select>
+ <button id="addObject">+ AÑADIR OBJETO</button>
+ <label>Objeto seleccionado</label>
+ <select id="objectList"><option value="">Ninguno</option></select>
+ <div class="two"><button id="deleteObject">ELIMINAR</button><button id="duplicateObject">DUPLICAR</button></div>
+ <h3>TRANSFORMAR</h3>
+ <div class="two">
+  <label>X <input id="objX" type="number" step="0.5" value="0"></label>
+  <label>Y <input id="objY" type="number" step="0.5" value="1"></label>
+  <label>Z <input id="objZ" type="number" step="0.5" value="0"></label>
+  <label>ESCALA <input id="objScale" type="number" min="0.2" max="20" step="0.2" value="1"></label>
+ </div>
+ <div class="two"><button id="moveLeft">X −</button><button id="moveRight">X +</button><button id="moveForward">Z −</button><button id="moveBack">Z +</button><button id="rotateLeft">GIRAR −15°</button><button id="rotateRight">GIRAR +15°</button></div>
+ <h3>MAPAS GUARDADOS</h3>
+ <label>Nombre del mapa</label><input id="mapName" type="text" maxlength="48" value="Mi mapa" placeholder="Nombre del mapa">
+ <button id="saveToLibrary">GUARDAR EN MIS MAPAS</button>
+ <label>Mis mapas (guardados en este navegador)</label><select id="savedMaps"><option value="">No hay mapas guardados</option></select>
+ <div class="two"><button id="loadSavedMap">CARGAR</button><button id="deleteSavedMap">BORRAR GUARDADO</button></div>
+ <button id="testMap">PROBAR MAPA</button>
+ <h3>IMPORTAR / EXPORTAR</h3>
+ <button id="saveMap">EXPORTAR MAPA JSON</button>
+ <button id="loadMapButton">IMPORTAR MAPA JSON</button>
+ <input id="loadMapFile" type="file" accept=".json,application/json" style="display:none">
+ <button id="clearMap">BORRAR OBJETOS CREADOS</button>
+ <button id="closeEditor">CERRAR EDITOR</button>
+ <p class="hint">Los mapas se guardan localmente en este navegador. Puedes guardar muchos mapas, pero el límite real depende del espacio disponible del navegador. Exporta copias JSON para conservarlos o compartirlos.</p><div id="editorStatus">Selecciona o añade un objeto para empezar.</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const V=THREE.Vector3,$=id=>document.getElementById(id),YA=new V(0,1,0);
+const R=new THREE.WebGLRenderer();R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.setSize(innerWidth,innerHeight);document.body.prepend(R.domElement);
+const S=new THREE.Scene();S.background=new THREE.Color(0);S.fog=new THREE.Fog(0x000000,6,58);
+const cam=new THREE.PerspectiveCamera(88,innerWidth/innerHeight,.1,100);cam.rotation.order='YXZ';S.add(cam);
+addEventListener('resize',()=>{R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()});
+const BK=new THREE.MeshBasicMaterial({color:0}),LN=new THREE.LineBasicMaterial({color:0xffffff}),LB=new THREE.LineBasicMaterial({color:0});
+function edged(g,mt,lm){const m=new THREE.Mesh(g,mt);m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),lm));return m}
+// Texturas procedurales
+const TC={};
+function tx(k){if(TC[k])return TC[k];const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,64,64);g.fillStyle='#000';g.strokeStyle='#000';g.lineWidth=3;
+ if(k==='rayas')for(let i=0;i<64;i+=16)g.fillRect(0,i,64,8);
+ if(k==='cuadros')for(let i=0;i<4;i++)for(let j=0;j<4;j++)if((i+j)%2)g.fillRect(i*16,j*16,16,16);
+ if(k==='circuito'){g.beginPath();g.moveTo(0,16);g.lineTo(24,16);g.lineTo(24,40);g.lineTo(64,40);g.moveTo(40,0);g.lineTo(40,24);g.lineTo(64,24);g.moveTo(8,64);g.lineTo(8,48);g.stroke();g.fillRect(20,36,8,8);g.fillRect(36,20,8,8)}
+ if(k==='hex')for(let i=0;i<4;i++)for(let j=0;j<4;j++){g.beginPath();g.arc(i*16+8+(j%2)*8,j*16+8,5,0,6.3);g.fill()}
+ if(k==='ruido')for(let i=0;i<220;i++)g.fillRect(Math.random()*64,Math.random()*64,3,3);
+ const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;return TC[k]=t}
+const mat=(k,c)=>new THREE.MeshBasicMaterial({map:k?tx(k):null,color:c===undefined?0xffffff:c});
+// Arena
+const fl=new THREE.Mesh(new THREE.PlaneGeometry(60,60),BK);fl.rotation.x=-Math.PI/2;S.add(fl);
+const gr=new THREE.GridHelper(60,30,0xffffff,0x666666);gr.position.y=.01;S.add(gr);
+const arenaWalls=[];[[0,-30.5,62,1],[0,30.5,62,1],[-30.5,0,1,62],[30.5,0,1,62]].forEach(([x,z,w,d])=>{const m=edged(new THREE.BoxGeometry(w,12,d),BK,LN);m.position.set(x,6,z);S.add(m);arenaWalls.push(m)});
+const P=[],PM=[],DEF=[[-10,-8],[10,-8],[-10,8],[10,8],[0,-18]];
+function setPillars(a){PM.forEach(m=>S.remove(m));PM.length=0;P.length=0;a.forEach(([x,z])=>{const m=edged(new THREE.CylinderGeometry(2,2,12,8),BK,LN);m.position.set(x,6,z);S.add(m);P.push({x,z,r:2});PM.push(m)})}
+setPillars(DEF);
+// Armas
+const W=[
+ {n:'REVOLVER',cd:.26,p:1,sp:0,d:26,r:90,pi:0,f:200,k:.12,tk:'rayas',sz:[.1,.16,.55]},
+ {n:'ESCOPETA',cd:.85,p:8,sp:.15,d:11,r:28,pi:0,f:80,k:.3,tk:'circuito',sz:[.16,.14,.8]},
+ {n:'AMETRALLADORA',cd:.075,p:1,sp:.05,d:7,r:60,pi:0,f:260,k:.05,tk:'cuadros',sz:[.14,.2,.7]},
+ {n:'RAILGUN',cd:1.4,p:1,sp:0,d:90,r:100,pi:1,f:50,k:.4,tk:'ruido',sz:[.12,.12,1.1]}];
+const GM=W.map((w,i)=>{const g=new THREE.Group(),b=edged(new THREE.BoxGeometry(...w.sz),mat(w.tk),LB),h=edged(new THREE.BoxGeometry(.1,.2,.12),mat(null),LB);h.position.set(0,-.16,w.sz[2]*.3);g.add(b,h);g.position.set(.3,-.28,-.7);g.visible=i===0;cam.add(g);return g});
+let cur=0;function setW(i){cur=i;GM.forEach((g,j)=>g.visible=j===i)}
+// Enemigos
+const T={f:{hp:30,sp:7.5,sz:[1,1.8,1],dm:12,y:.9},
+ s:{hp:40,sp:5,dm:0,y:2.2,k:'rayas',rg:1},
+ b:{hp:150,sp:5.5,sz:[1.8,3,1.8],dm:25,y:1.5,k:'hex'},
+ B:{hp:700,sp:4.5,sz:[4,6,4],dm:35,y:3,k:'circuito',rg:1,boss:1}};
+// Niveles
+const LV=[{n:'SUPERFICIE',w:3,p:'fs',pl:DEF},{n:'CATACUMBAS',w:4,p:'fsb',pl:[[0,0],[-15,-15],[15,-15],[-15,15],[15,15]]},
+ {n:'NUCLEO',w:4,p:'fsb',bs:1,pl:[[-8,0],[8,0],[0,-14],[0,14]]},{n:'EL ABISMO',w:5,p:'fsb',bs:2,pl:[[-12,-12],[12,-12],[-12,12],[12,12],[0,0]]}];
+// Ajustes y personaje
+const cf=Object.assign({fov:88,sens:4,tp:0,cb:0,ch:0,ca:0,cc:0},(()=>{try{return JSON.parse(localStorage.getItem('mk'))||{}}catch(e){return{}}})());
+const IDS={sf:'fov',ss:'sens',cb:'cb',ch:'ch',ca:'ca',cc:'cc'};
+[['cb',['Liso','Rayas','Cuadros','Circuito','Among Us']],['ch',['Cubo','Esfera','Casco']],['ca',['Ninguno','Cuernos','Antena','Visor','Gorro','Sombrero','Corona']],['cc',['Blanco','Gris','Negro','Rojo','Azul','Verde','Rosa','Amarillo']]].forEach(([id,a])=>$(id).innerHTML=a.map((n,i)=>'<option value='+i+'>'+n+'</option>').join(''));
+const av=new THREE.Group();S.add(av);let legs=[];
+function buildAv(){while(av.children.length)av.remove(av.children[0]);legs=[];
+ const cols=[0xffffff,0x999999,0x222222,0xe53935,0x287bff,0x35b85a,0xff78b9,0xffd42a],col=cols[cf.cc]??0xffffff,lm=cf.cc==2?LN:LB,tk=[null,'rayas','cuadros','circuito'][cf.cb];
+ const pt=(g,x,y,z,k,c,l)=>{const m=edged(g,mat(k,c===undefined?col:c),l||lm);m.position.set(x,y,z);av.add(m);return m},B=THREE.BoxGeometry;
+ if(cf.cb===4){
+   // Silueta inspirada en un tripulante espacial, con visor y mochila.
+   pt(new THREE.CylinderGeometry(.38,.42,1.05,12),0,1.02,0,null,col);
+   pt(new THREE.SphereGeometry(.39,12,8),0,1.53,0,null,col);
+   pt(new B(.22,.62,.24),0,.98,.42,null,col);
+   pt(new B(.32,.18,.16),0,1.5,-.36,null,0x5edcff);
+   pt(new B(.2,.7,.2),-.43,1.05,0,null,col);pt(new B(.2,.7,.2),.43,1.05,0,null,col);
+   legs.push(pt(new B(.24,.42,.28),-.2,.27,0,null,col),pt(new B(.24,.42,.28),.2,.27,0,null,col));
+ }else{
+   pt(new B(.7,.8,.4),0,1,0,tk);
+   pt([new B(.5,.5,.5),new THREE.SphereGeometry(.32,8,6),new THREE.CylinderGeometry(.2,.36,.6,6)][cf.ch],0,1.7,0);
+   pt(new B(.2,.7,.2),-.48,1,0,tk);pt(new B(.2,.7,.2),.48,1,0,tk);
+   legs.push(pt(new B(.26,.7,.26),-.18,.35,0,tk),pt(new B(.26,.7,.26),.18,.35,0,tk));
+ }
+ if(cf.ca===1)[-.18,.18].forEach(x=>pt(new THREE.ConeGeometry(.1,.4,4),x,2.1,0));
+ if(cf.ca===2){pt(new THREE.CylinderGeometry(.03,.03,.6,4),0,2.2,0);pt(new THREE.SphereGeometry(.08,6,4),0,2.55,0)}
+ if(cf.ca===3)pt(new B(.5,.12,.1),0,1.72,-.26,null,0,LN);
+ if(cf.ca===4)pt(new THREE.SphereGeometry(.26,10,7),0,2.08,0,null,0x3333ff);
+ if(cf.ca===5){const h=pt(new THREE.ConeGeometry(.34,.48,8),0,2.12,0,null,0x222222);h.rotation.x=.08}
+ if(cf.ca===6){pt(new B(.55,.1,.12),0,2.02,0,null,0xffd42a);[-.18,.18].forEach(x=>pt(new THREE.ConeGeometry(.1,.25,4),x,2.18,0,null,0xffd42a))}
+ pt(new B(.1,.12,.5),.48,1.1,-.4,null,0xffffff,LB)}
+function sync(){for(const i in IDS)cf[IDS[i]]=+$(i).value;cf.tp=$('st').checked?1:0;cam.fov=cf.fov;cam.updateProjectionMatrix();try{localStorage.setItem('mk',JSON.stringify(cf))}catch(e){}buildAv()}
+for(const i in IDS){$(i).value=cf[IDS[i]];$(i).oninput=sync}$('st').checked=!!cf.tp;$('st').onchange=sync;cam.fov=cf.fov;cam.updateProjectionMatrix();buildAv();
+// Estado
+let hp=100,stam=3,score=0,wave=0,style=0,playing=false,paused=false,hadLock=false,mode=0,lv=0,wv=0,list=[],hmul=1;
+let yaw=0,pitch=0,onGround=true,slam=false,dashT=0,shake=0,flashT=0,cd=0,waveT=1,spawnT=0,bannerT=0,lastW=0,t=0,mt2=0,kick=0;
+const pos=new V(0,0,22),vel=new V(),dd=new V();
+let E=[],PA=[],PR=[],TR=[];
+const keys={};let mL=false,mR=false;
+ // Controles táctiles: joystick, mirar y botones de acción
+ (function setupTouch(){
+   const ui=$('touchUI'),base=$('joyBase'),knob=$('joyKnob');
+   if(!ui||!base||!knob)return;
+   let joyId=null,lookId=null,lastX=0,lastY=0;
+   function moveJoy(e){
+     const r=base.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+     let dx=e.clientX-cx,dy=e.clientY-cy,lim=43,d=Math.hypot(dx,dy);
+     if(d>lim){dx=dx/d*lim;dy=dy/d*lim}
+     knob.style.transform=`translate(${dx}px,${dy}px)`;
+     keys.KeyA=dx < -12;keys.KeyD=dx > 12;keys.KeyW=dy < -12;keys.KeyS=dy > 12;
+   }
+   function resetJoy(){joyId=null;keys.KeyA=keys.KeyD=keys.KeyW=keys.KeyS=false;knob.style.transform='translate(0,0)'}
+   base.addEventListener('pointerdown',e=>{e.preventDefault();joyId=e.pointerId;base.setPointerCapture(e.pointerId);moveJoy(e)});
+   base.addEventListener('pointermove',e=>{if(e.pointerId===joyId)moveJoy(e)});
+   base.addEventListener('pointerup',e=>{if(e.pointerId===joyId)resetJoy()});
+   base.addEventListener('pointercancel',resetJoy);
+   document.addEventListener('pointerdown',e=>{
+     if(!playing||paused||e.target.closest('button')||e.target===base||base.contains(e.target))return;
+     lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;
+   });
+   document.addEventListener('pointermove',e=>{
+     if(e.pointerId!==lookId||!playing||paused)return;
+     const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
+     yaw-=dx*.006*cf.sens;pitch=Math.max(-1.5,Math.min(1.5,pitch-dy*.006*cf.sens));
+   });
+   const clearLook=e=>{if(e.pointerId===lookId)lookId=null};
+   document.addEventListener('pointerup',clearLook);document.addEventListener('pointercancel',clearLook);
+   function hold(id,down,up){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.setPointerCapture(e.pointerId);down()});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>{e.stopPropagation();up()}))}
+   hold('fireBtn',()=>mL=true,()=>mL=false);
+   hold('jumpBtn',()=>keys.Space=true,()=>keys.Space=false);
+   hold('dashBtn',()=>{if(playing&&!paused&&stam>=1&&dashT<=0){stam-=1;dashT=.2;const[x,z,m]=mdir();if(m)dd.set(x,0,z);else dd.set(-Math.sin(yaw),0,-Math.cos(yaw));snd(140,.15,'sawtooth')}},()=>{});
+   hold('slamBtn',()=>{if(!onGround){slam=true;vel.y=-46;dashT=0}},()=>{});
+   const updateTouch=()=>{const enabled=$('mobileControlsToggle')?.checked!==false;ui.style.display=(enabled&&('ontouchstart' in window || navigator.maxTouchPoints>0))?'block':'none'};
+   if($('mobileControlsToggle'))$('mobileControlsToggle').addEventListener('change',updateTouch);
+   updateTouch();
+ })();
+const RK=['D','C','B','A','S','SS','SSS','ULTRAKILL'],ri=()=>Math.min(7,Math.floor(style/12.5));
+let ac;function snd(f,d,ty){try{ac=ac||new AudioContext();const o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime;o.type=ty;o.frequency.setValueAtTime(f,n);o.frequency.exponentialRampToValueAtTime(Math.max(20,f/3),n+d);g.gain.setValueAtTime(.07,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(n+d)}catch(e){}}
+function push(p,r){for(const q of P){const dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz),m=q.r+r;if(d<m&&d>0){p.x=q.x+dx/d*m;p.z=q.z+dz/d*m}}p.x=Math.max(-29,Math.min(29,p.x));p.z=Math.max(-29,Math.min(29,p.z))}
+function mdir(){const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0),sy=Math.sin(yaw),cy=Math.cos(yaw);let x=-sy*f+cy*s,z=-cy*f-sy*s;const l=Math.hypot(x,z);if(l>1){x/=l;z/=l}return[x,z,l>0]}
+function banner(s){$('banner').textContent=s;bannerT=2}
+const pg=new THREE.BoxGeometry(.14,.14,.14),pm=new THREE.MeshBasicMaterial({color:0xffffff});
+function burst(p,n){for(let i=0;i<n;i++){const m=new THREE.Mesh(pg,pm);m.position.copy(p);S.add(m);PA.push({m,v:new V((Math.random()-.5)*12,Math.random()*9,(Math.random()-.5)*12),l:.9})}}
+function spawn(ty,hm){const d=T[ty],g=ty==='s'?new THREE.OctahedronGeometry(.9,1):new THREE.BoxGeometry(...d.sz),a=Math.random()*6.283;
+ const m=edged(g,mat(d.k,ty==='B'?0x333344:ty==='b'?0x6c2630:ty==='s'?0x1b8caa:0x888888),LB);
+ let sp=null;if(activeMap&&Array.isArray(activeMap.objects)){const pts=activeMap.objects.filter(o=>o.type==='enemy_'+ty);if(pts.length)sp=pts[Math.floor(Math.random()*pts.length)]}
+ m.position.set(sp?sp.x:(d.boss?0:Math.cos(a)*26),sp?Math.max(d.y,sp.y):d.y,sp?sp.z:(d.boss?-24:Math.sin(a)*26));
+ const eyeMat=new THREE.MeshBasicMaterial({color:ty==='B'?0xff2222:0xffffff}),darkMat=new THREE.MeshBasicMaterial({color:0x050505});
+ const eyeGeo=new THREE.SphereGeometry(ty==='B'?.22:.11,8,6);
+ [-1,1].forEach(side=>{const eye=new THREE.Mesh(eyeGeo,eyeMat);eye.position.set(side*(ty==='B'?.72:.28),ty==='B'?1.15:.35,-(d.sz?.[2]||1)*.52);m.add(eye);const pupil=new THREE.Mesh(new THREE.SphereGeometry(.05,6,4),darkMat);pupil.position.set(0,0,-.07);eye.add(pupil)});
+ if(ty==='B'||ty==='b'){const hornGeo=new THREE.ConeGeometry(ty==='B'?.35:.18,ty==='B'?1.1:.55,5);[-1,1].forEach(side=>{const horn=new THREE.Mesh(hornGeo,new THREE.MeshBasicMaterial({color:0xffffff}));horn.position.set(side*(ty==='B'?1.1:.48),ty==='B'?3.0:1.35,0);horn.rotation.z=side*-.22;m.add(horn)})}
+ if(ty==='s'){const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.06,6,16),new THREE.MeshBasicMaterial({color:0x66eeff}));ring.rotation.x=Math.PI/2;m.add(ring)}
+ S.add(m);const h=d.hp*(d.boss?hm:1);E.push({m,d,hp:h,mx:h,cd:1+Math.random(),mc:0,dir:Math.random()<.5?1:-1,ph:Math.random()*6,flash:0,baseY:m.position.y})}
+function hurt(e,dm){e.hp-=dm;e.flash=.07;snd(260,.05,'square');if(e.hp<=0)kill(e)}
+function kill(e){const i=E.indexOf(e);if(i<0)return;S.remove(e.m);E.splice(i,1);
+ const d=Math.hypot(pos.x-e.m.position.x,pos.z-e.m.position.z),bs=e.d.boss;burst(e.m.position,bs?70:16);
+ let b=bs?60:22;if(lastW===1&&d<9)b+=10;if(!onGround)b+=10;if(slam)b+=12;
+ style=Math.min(100,style+b);score+=Math.round(100*(1+ri()*.5))*(bs?10:e.d.hp>100?3:1);hp=Math.min(100,hp+(bs?40:d<8?14:6));snd(520,.1,'triangle')}
+function hurtP(d){if(trainingMode||dashT>0)return;hp-=d;flashT=.3;shake=.35;snd(90,.2,'sawtooth');if(hp<=0)end('MUERTO')}
+function menu(title,html,res){$('mt').textContent=title;$('mp').innerHTML=html;$('bC').style.display=res?'block':'none';$('msg').style.display='flex';document.exitPointerLock&&document.exitPointerLock()}
+function end(tt){playing=false;mL=mR=false;menu(tt,(trainingMode?'Modo práctica · ':'')+(mode?'Nivel '+(lv+1):'Oleada '+wave)+' · Puntos '+score,0)}
+function pause(){if(!playing||paused)return;paused=true;mL=mR=false;menu('PAUSA','',1)}
+function boom(){shake=1;snd(50,.4,'sawtooth');burst(pos,24);for(const e of E.slice())if(Math.hypot(e.m.position.x-pos.x,e.m.position.z-pos.z)<9)hurt(e,50)}
+function shootP(from,off,dm){const m=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),pm);m.position.copy(from);S.add(m);
+ const v=new V(pos.x-from.x,pos.y+1.2-from.y,pos.z-from.z).normalize().applyAxisAngle(YA,off).multiplyScalar(17);PR.push({m,v,l:5,dm})}
+// Disparo
+const rc=new THREE.Raycaster(),fw=new V();
+function fire(w){cam.getWorldDirection(fw);cam.updateMatrixWorld();const tg=E.map(e=>e.m).concat(PM),
+ gp=cf.tp?new V(pos.x,pos.y+1.2,pos.z).addScaledVector(fw,.7):cam.localToWorld(new V(.3,-.25,-.9));
+ for(let i=0;i<w.p;i++){const d=fw.clone();d.x+=(Math.random()-.5)*w.sp;d.y+=(Math.random()-.5)*w.sp;d.z+=(Math.random()-.5)*w.sp;d.normalize();
+  rc.set(cam.position,d);rc.far=w.r;const hs=rc.intersectObjects(tg,false);let end=cam.position.clone().addScaledVector(d,Math.min(w.r,40));
+  for(const h of hs){end=h.point;const e=E.find(q=>q.m===h.object);if(!e)break;hurt(e,w.d*(1-h.distance/w.r*.6));if(!w.pi)break}
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([gp,end]),LN);S.add(l);TR.push({l,t:w.pi?.25:.07})}}
+// Oleadas
+function setLevel(){setPillars(LV[lv].pl)}
+function advance(){let ls=[],hm=1,n;
+ if(!mode){wave++;n=Math.min(26,3+wave*2);const pool=wave>=4?'fsb':wave>=2?'fs':'f';for(let i=0;i<n;i++)ls.push(pool[Math.floor(Math.random()*pool.length)]);
+  if(wave%10===0){ls=['B','f','f','f','f'];hm=1+wave/20;banner('JEFE')}else banner('OLEADA '+wave)}
+ else{if(wv>=LV[lv].w){lv++;wv=0;if(lv>=LV.length){end('VICTORIA');return}setLevel()}
+  wv++;const L=LV[lv];n=3+wv*2+lv*2;for(let i=0;i<n;i++)ls.push(L.p[Math.floor(Math.random()*L.p.length)]);
+  if(wv===L.w&&L.bs){ls=['B','b','f','f','f'];hm=.6+L.bs*.5}banner(wv===1?'NIVEL '+(lv+1)+' '+L.n:'OLEADA '+wv)}
+ list=ls;hmul=hm;spawnT=0;waveT=3}
+let playerName='';
+// Multijugador: funciona en local y online; usa WSS cuando la página va por HTTPS.
+let localSocket=null,localConnected=false,mpSendClock=0,localPeerId='';
+const remotePlayers=new Map();
+function makeRemotePlayer(id,name,color){
+ const g=new THREE.Group(),c=new THREE.MeshBasicMaterial({color:color||0x55aaff}),edge=new THREE.LineBasicMaterial({color:0xffffff});
+ const body=new THREE.Mesh(new THREE.BoxGeometry(.7,.9,.42),c);body.position.y=1;body.add(new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry),edge));g.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),c);head.position.y=1.7;g.add(head);
+ const visor=new THREE.Mesh(new THREE.BoxGeometry(.38,.13,.06),new THREE.MeshBasicMaterial({color:0x5edcff}));visor.position.set(0,1.72,-.27);g.add(visor);
+ const cv=document.createElement('canvas');cv.width=256;cv.height=64;const cx=cv.getContext('2d');cx.fillStyle='#000';cx.fillRect(0,0,256,64);cx.strokeStyle='#fff';cx.strokeRect(1,1,254,62);cx.fillStyle='#fff';cx.font='bold 24px monospace';cx.textAlign='center';cx.fillText(String(name||'Jugador').slice(0,18),128,40);
+ const tex=new THREE.CanvasTexture(cv),label=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));label.scale.set(3,0.75,1);label.position.y=2.55;g.add(label);g.userData.playerName=name;S.add(g);remotePlayers.set(id,g);return g;
+}
+function connectLocal(){
+ if(localSocket&&localSocket.readyState===WebSocket.OPEN){localSocket.close();return}
+ if(!playerName&&!validProfile())return;
+ if(location.protocol==='file:'){ $('mpStatus').textContent='Abre el juego desde la dirección web del servidor, no haciendo doble clic en el HTML.';return; }
+ const host=location.hostname||'localhost';const wsProtocol=location.protocol==='https:'?'wss:':'ws:';const wsPort=location.port?':'+location.port:'';let ws;
+ try{ws=new WebSocket(wsProtocol+'//'+host+wsPort)}catch(e){$('mpStatus').textContent='No se pudo iniciar la conexión. Comprueba que el servidor esté activo.';return}
+ localSocket=ws;$('mpStatus').textContent='Conectando al servidor online…';
+ ws.onopen=()=>{localConnected=true;$('mpStatus').textContent='Conectado al servidor. Comparte la dirección web con los demás jugadores.';ws.send(JSON.stringify({type:'join',name:playerName,color:[0xffffff,0x999999,0x222222,0xe53935,0x287bff,0x35b85a,0xff78b9,0xffd42a][cf.cc]||0x55aaff}));$('connectLocal').textContent='DESCONECTAR MULTIJUGADOR'};
+ ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}
+  if(d.type==='welcome'){localPeerId=d.id;(d.players||[]).forEach(p=>{if(p.id!==localPeerId)makeRemotePlayer(p.id,p.name,p.color)});}
+  else if(d.type==='state'){let g=remotePlayers.get(d.id)||makeRemotePlayer(d.id,d.name,d.color);g.position.set(d.x||0,d.y||0,d.z||0);g.rotation.y=d.yaw||0;}
+  else if(d.type==='leave'){const g=remotePlayers.get(d.id);if(g){S.remove(g);remotePlayers.delete(d.id)}}
+ };
+ ws.onerror=()=>{$('mpStatus').textContent='No se pudo conectar. Asegúrate de que el servidor esté iniciado y que Windows permita la conexión.'};
+ ws.onclose=()=>{localConnected=false;localSocket=null;$('connectLocal').textContent='CONECTAR AL MULTIJUGADOR';$('mpStatus').textContent='Desconectado.';for(const g of remotePlayers.values())S.remove(g);remotePlayers.clear()};
+}
+$('connectLocal').addEventListener('click',connectLocal);
+let trainingMode=false; // Modo práctica: los enemigos siguen apareciendo, pero el jugador no recibe daño.
+function validProfile(){
+ const field=$('username');playerName=(field.value||'').trim().replace(/[<>]/g,'').slice(0,18);
+ if(!playerName){$('profileHint').textContent='Escribe un nombre de usuario para empezar.';field.focus();return false}
+ $('profileHint').textContent='Jugando como: '+playerName;
+ try{localStorage.setItem('mk_username',playerName)}catch(e){}
+ return true
+}
+try{$('username').value=localStorage.getItem('mk_username')||''}catch(e){}
+function start(m){if(!validProfile())return;const custom=!!activeMap;if(custom){fl.visible=false;gr.visible=false;arenaWalls.forEach(o=>o.visible=false);PM.forEach(o=>o.visible=false);editorObjects.forEach(o=>{o.visible=!o.userData.editorType.startsWith('enemy_')})}else{fl.visible=true;gr.visible=true;arenaWalls.forEach(o=>o.visible=true);editorObjects.forEach(o=>o.visible=true)}for(const e of E)S.remove(e.m);for(const a of PA.concat(PR))S.remove(a.m);E=[];PA=[];PR=[];list=[];
+ mode=m;hp=100;stam=3;score=0;wave=0;lv=0;wv=0;style=0;pos.set(0,0,22);vel.set(0,0,0);yaw=0;pitch=0;waveT=1;if(custom)setPillars([]);else setPillars(m?LV[0].pl:DEF);go()}
+function go(){playing=true;paused=false;$('msg').style.display='none';try{R.domElement.requestPointerLock()}catch(e){}}
+$('bI').onclick=()=>{trainingMode=false;activeMap=null;start(0)};$('bL').onclick=()=>{trainingMode=false;activeMap=null;start(1)};$('bT').onclick=()=>{trainingMode=true;activeMap=null;start(0);banner('MODO PRÁCTICA');};$('bC').onclick=()=>{if(validProfile())go()};
+// Entrada
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();
+ if(e.code==='KeyV'){cf.tp^=1;$('st').checked=!!cf.tp;sync()}
+ if(e.code==='KeyP')pause();
+ if(!playing||paused)return;
+ if(e.code>='Digit1'&&e.code<='Digit4')setW(+e.code[5]-1);
+ if(e.code.startsWith('Shift')&&stam>=1&&dashT<=0){stam-=1;dashT=.2;const[x,z,m]=mdir();if(m)dd.set(x,0,z);else dd.set(-Math.sin(yaw),0,-Math.cos(yaw));snd(140,.15,'sawtooth')}
+ if(e.code==='KeyC'&&!onGround){slam=true;vel.y=-46;dashT=0}});
+addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('wheel',e=>{if(playing&&!paused)setW((cur+(e.deltaY>0?1:3))%4)});
+addEventListener('mousedown',e=>{if(!playing||paused)return;if(e.button===0)mL=true;if(e.button===2)mR=true});
+addEventListener('mouseup',e=>{if(e.button===0)mL=false;if(e.button===2)mR=false});
+addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('mousemove',e=>{if(document.pointerLockElement){yaw-=e.movementX*.00055*cf.sens;pitch=Math.max(-1.5,Math.min(1.5,pitch-e.movementY*.00055*cf.sens))}});
+document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement)hadLock=true;else if(hadLock)pause()});
+// Bucle de juego
+function step(dt){t+=dt;
+ if(keys.ArrowLeft)yaw+=2.6*dt;if(keys.ArrowRight)yaw-=2.6*dt;if(keys.ArrowUp)pitch=Math.min(1.5,pitch+2*dt);if(keys.ArrowDown)pitch=Math.max(-1.5,pitch-2*dt);
+ const[wx,wz]=mdir();
+ if(dashT>0){dashT-=dt;vel.x=dd.x*42;vel.z=dd.z*42;vel.y=0}
+ else{const k=Math.min(1,(onGround?14:3.5)*dt);vel.x+=(wx*15-vel.x)*k;vel.z+=(wz*15-vel.z)*k;vel.y-=28*dt}
+ if(keys.Space&&onGround&&dashT<=0){vel.y=10.5;onGround=false;snd(320,.08,'square')}
+ pos.addScaledVector(vel,dt);
+ if(pos.y<=0){if(!onGround&&slam)boom();pos.y=0;vel.y=Math.max(vel.y,0);onGround=true;slam=false}else onGround=false;
+ push(pos,.6);stam=Math.min(3,stam+dt*.6);cd-=dt;
+ if((mL||mR)&&cd<=0){const w=W[cur];cd=w.cd;lastW=cur;fire(w);kick=w.k;snd(w.f,.1,'square')}
+ kick=Math.max(0,kick-dt*1.6);GM[cur].position.z=-.7+kick;
+ if(list.length){spawnT-=dt;if(spawnT<=0){spawn(list.shift(),hmul);spawnT=.45}}
+ else if(!E.length){waveT-=dt;if(waveT<=0)advance()}
+ for(const e of E){const m=e.m,D=e.d; m.rotation.z=Math.sin(t*3+e.ph)*.035; m.scale.y=1+Math.sin(t*5+e.ph)*.025; const dx=pos.x-m.position.x,dz=pos.z-m.position.z,d=Math.hypot(dx,dz)||1,nx=dx/d,nz=dz/d;e.cd-=dt;e.mc-=dt;
+  if(!D.rg){m.position.x+=nx*D.sp*dt;m.position.z+=nz*D.sp*dt;if(d<D.sz[0]+.7&&pos.y<D.sz[1]&&e.cd<=0){e.cd=.8;hurtP(D.dm)}}
+  else{const lo=D.boss?8:10,hi=D.boss?13:16,sp=d>hi?1:d<lo?-1:0;m.position.x+=(nx*sp-nz*.6*e.dir)*D.sp*dt;m.position.z+=(nz*sp+nx*.6*e.dir)*D.sp*dt;
+   if(!D.boss)m.position.y=e.baseY+Math.sin(t*3+e.ph)*.22;
+   if(e.cd<=0){if(D.boss){e.cd=2.4;for(let k=-2;k<=2;k++)shootP(m.position,k*.22,20)}else{e.cd=2;shootP(m.position,0,15)}}
+   if(D.boss&&d<5&&e.mc<=0){e.mc=1;hurtP(D.dm)}}
+  push(m.position,D.sz?D.sz[0]*.5:.6);m.rotation.y=Math.atan2(nx,nz);if(e.flash>0)e.flash-=dt;m.material.color.setHex(e.flash>0?0x555555:0xffffff)}
+ for(let i=PR.length-1;i>=0;i--){const p=PR[i];p.m.position.addScaledVector(p.v,dt);p.l-=dt;
+  if(p.m.position.distanceTo(new V(pos.x,pos.y+1.2,pos.z))<.9){hurtP(p.dm);p.l=0}if(p.l<=0){S.remove(p.m);PR.splice(i,1)}}
+ style=Math.max(0,style-(4+ri()*3.5)*dt);shake=Math.max(0,shake-dt*2.5);flashT=Math.max(0,flashT-dt);
+ if(localConnected&&localSocket&&localSocket.readyState===WebSocket.OPEN){mpSendClock-=dt;if(mpSendClock<=0){mpSendClock=.06;localSocket.send(JSON.stringify({type:'state',name:playerName,x:pos.x,y:pos.y,z:pos.z,yaw:yaw,color:[0xffffff,0x999999,0x222222,0xe53935,0x287bff,0x35b85a,0xff78b9,0xffd42a][cf.cc]||0x55aaff}));}}}
+function post(dt){
+ for(let i=PA.length-1;i>=0;i--){const p=PA[i];p.v.y-=22*dt;p.m.position.addScaledVector(p.v,dt);if(p.m.position.y<.07){p.m.position.y=.07;p.v.set(0,0,0)}p.l-=dt;if(p.l<=0){S.remove(p.m);PA.splice(i,1)}}
+ for(let i=TR.length-1;i>=0;i--){const q=TR[i];q.t-=dt;if(q.t<=0){S.remove(q.l);q.l.geometry.dispose();TR.splice(i,1)}}
+ const live=playing&&!paused;mt2+=dt;
+ av.position.copy(pos);
+ if(live){av.rotation.y=yaw;const sw=Math.sin(t*11)*Math.min(1,Math.hypot(vel.x,vel.z)/12)*.9;if(legs[0]){legs[0].rotation.x=sw;legs[1].rotation.x=-sw}
+  const sy=Math.sin(yaw),cy=Math.cos(yaw),sp=Math.sin(pitch),cp=Math.cos(pitch),sk=(Math.random()-.5)*shake*.3;
+  if(cf.tp){const tg=new V(pos.x,pos.y+1.5,pos.z),f=new V(-sy*cp,sp,-cy*cp);
+   cam.position.copy(tg).addScaledVector(f,-4.2).add(new V(cy*.7,0,-sy*.7));cam.position.x=Math.max(-29.5,Math.min(29.5,cam.position.x));cam.position.z=Math.max(-29.5,Math.min(29.5,cam.position.z));cam.position.y=Math.max(.4,cam.position.y)}
+  else cam.position.set(pos.x+sk,pos.y+1.6+sk,pos.z);
+  cam.rotation.set(pitch,yaw,0);av.visible=!!cf.tp}
+ else if(editorOpen){av.visible=false;}else{av.visible=true;av.rotation.y=0;const a=mt2*.5,tg=new V(pos.x,1.1,pos.z);cam.position.set(tg.x+Math.sin(a)*3.8,1.6,tg.z+Math.cos(a)*3.8);cam.lookAt(tg)}
+ GM.forEach((g,i)=>g.visible=i===cur&&live&&!cf.tp);
+ const bo=E.find(e=>e.d.boss);$('bb').style.display=bo?'block':'none';if(bo)$('bbi').style.width=bo.hp/bo.mx*100+'%';
+ $('hpb').style.width=Math.max(0,hp)+'%';$('stb').style.width=stam/3*100+'%';$('sb').style.width=style+'%';
+ $('rank').textContent=style>0?RK[ri()]:'';
+ $('info').textContent=playerName+' · '+(mode?'NIVEL '+(lv+1)+' · '+wv+'/'+LV[lv].w:'OLEADA '+wave)+' · '+score+' · '+(cur+1)+' '+W[cur].n;
+ $('flash').style.opacity=flashT*2.5;
+ if(bannerT>0){bannerT-=dt;$('banner').style.opacity=Math.min(1,bannerT)}}
+
+// Perfil obligatorio y editor de mapas 3D (solo escritorio).
+const editorObjects=[];
+let editorSelected=null,editorOpen=false,editorSerial=0,activeMap=null;
+const desktopOnly=()=>!('ontouchstart' in window)&&navigator.maxTouchPoints===0&&innerWidth>800;
+const editorFloor=new THREE.Mesh(new THREE.PlaneGeometry(240,240),new THREE.MeshBasicMaterial({color:0x050505}));editorFloor.rotation.x=-Math.PI/2;editorFloor.position.y=-.03;editorFloor.visible=false;S.add(editorFloor);
+const editorGrid=new THREE.GridHelper(240,120,0x8a8a8a,0x343434);editorGrid.position.y=0;editorGrid.visible=false;S.add(editorGrid);
+const arenaVis=[fl,gr,...arenaWalls,...PM];
+let editorCamYaw=0,editorCamPitch=-.55,editorCamSpeed=20,editorLook=false,editorLastX=0,editorLastY=0;
+const editorCameraKeys={};
+function editorSay(s){$('editorStatus').textContent=s}
+function editorRefreshList(){const sel=$('objectList'),old=editorSelected?editorSelected.userData.editorId:'';sel.innerHTML='<option value="">Ninguno</option>'+editorObjects.map(o=>'<option value="'+o.userData.editorId+'">'+o.userData.editorName+'</option>').join('');sel.value=old}
+function editorPick(id){editorSelected=editorObjects.find(o=>o.userData.editorId===id)||null;if(editorSelected){$('objX').value=editorSelected.position.x.toFixed(1);$('objY').value=editorSelected.position.y.toFixed(1);$('objZ').value=editorSelected.position.z.toFixed(1);$('objScale').value=editorSelected.scale.x.toFixed(1);editorSay('Seleccionado: '+editorSelected.userData.editorName+'\nArrastra con botón derecho para mirar; WASD para volar; Q/E baja/sube.')}else editorSay('Ningún objeto seleccionado.');editorRefreshList()}
+function editorAdd(type,data){
+ let geo,name,colour=0x333333;
+ if(type==='floor'){geo=new THREE.BoxGeometry(60,.15,60);name='Suelo plano';colour=0x111111}
+ else if(type.startsWith('enemy_')){geo=type==='enemy_s'?new THREE.OctahedronGeometry(.9,1):new THREE.BoxGeometry(...(T[type.slice(6)]?.sz||[1,1,1]));name=({'enemy_f':'Enemigo básico','enemy_s':'Enemigo flotante','enemy_b':'Enemigo pesado','enemy_B':'JEFE'})[type];colour=type==='enemy_B'?0xff2222:type==='enemy_s'?0x22bbdd:type==='enemy_b'?0x9b2735:0x888888}
+ else if(type==='light'){geo=new THREE.IcosahedronGeometry(.65,1);name='Marcador luminoso';colour=0x88ddff}
+ else{geo=new THREE.BoxGeometry(2,2,2);name='Bloque';colour=0x222222}
+ const material=new THREE.MeshBasicMaterial({color:colour,transparent:type.startsWith('enemy_'),opacity:type.startsWith('enemy_')?.72:1});const mesh=new THREE.Mesh(geo,material);
+ if(!type.startsWith('enemy_')&&type!=='floor')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0xffffff})));
+ if(type.startsWith('enemy_')){const ring=new THREE.Mesh(new THREE.TorusGeometry(1.0,.045,6,20),new THREE.MeshBasicMaterial({color:0xffffff}));ring.rotation.x=Math.PI/2;mesh.add(ring)}
+ mesh.position.set(data?.x??0,data?.y??(type==='floor'?-.1:type.startsWith('enemy_')?(T[type.slice(6)]?.y||1):1),data?.z??0);const sc=data?.scale??1;mesh.scale.set(sc,sc,sc);mesh.rotation.y=data?.rotation??0;
+ mesh.userData.editorId='mapobj_'+(++editorSerial);mesh.userData.editorName=(data?.name||name)+' '+editorSerial;mesh.userData.editorType=data?.type||type;mesh.userData.editorBaseY=mesh.position.y;S.add(mesh);editorObjects.push(mesh);editorPick(mesh.userData.editorId);return mesh
+}
+function editorTransform(){if(!editorSelected)return;editorSelected.position.set(+$('objX').value||0,+$('objY').value||0,+$('objZ').value||0);const sc=Math.max(.2,Math.min(20,+$('objScale').value||1));editorSelected.scale.setScalar(sc)}
+function editorData(){return {format:'MONOKILL_MAP_V2',name:($('mapName').value||'Mi mapa').trim().slice(0,48)||'Mi mapa',createdAt:new Date().toISOString(),objects:editorObjects.map(o=>({type:o.userData.editorType,name:o.userData.editorName,x:o.position.x,y:o.position.y,z:o.position.z,scale:o.scale.x,rotation:o.rotation.y}))}}
+function editorExport(){const payload=editorData(),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(payload.name.replace(/[^a-z0-9_-]/gi,'_')||'monokill-mapa')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);editorSay('Mapa exportado como JSON.')}
+function editorClear(){for(const o of editorObjects)S.remove(o);editorObjects.length=0;editorSelected=null;editorRefreshList()}
+function editorImportData(data,clear=true){if(!data||!['MONOKILL_MAP_V1','MONOKILL_MAP_V2'].includes(data.format)||!Array.isArray(data.objects))throw Error('Formato de mapa no reconocido');if(clear)editorClear();$('mapName').value=data.name||'Mapa importado';data.objects.forEach(o=>{if(['floor','box','light','enemy_f','enemy_s','enemy_b','enemy_B'].includes(o.type))editorAdd(o.type,o)});editorSay('Mapa cargado: '+(data.name||'Sin nombre')+' · '+data.objects.length+' elementos.')}
+function getMapLibrary(){try{const v=JSON.parse(localStorage.getItem('mk_map_library')||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
+function refreshLibrary(selected){const lib=getMapLibrary();$('savedMaps').innerHTML=lib.length?lib.map(m=>'<option value="'+m.id+'">'+m.name.replace(/[<>]/g,'')+'</option>').join(''):'<option value="">No hay mapas guardados</option>';if(selected)$('savedMaps').value=selected}
+function editorOpenMode(){if(!desktopOnly()){editorSay('El editor 3D solo está disponible en PC con teclado y ratón.');return}editorOpen=true;paused=true;playing=false;$('msg').style.display='none';$('editorPanel').style.display='block';editorObjects.forEach(o=>o.visible=true);arenaVis.forEach(o=>o.visible=false);PM.forEach(o=>o.visible=false);av.visible=false;GM.forEach(o=>o.visible=false);editorFloor.visible=true;editorGrid.visible=true;cam.position.set(0,24,34);editorCamYaw=0;editorCamPitch=-.55;cam.rotation.set(editorCamPitch,editorCamYaw,0);if(!editorObjects.length)editorAdd('floor',{name:'Suelo principal',x:0,y:-.1,z:0});refreshLibrary();editorRefreshList();editorSay('Editor 3D listo. WASD vuela, Q/E baja/sube, ratón derecho gira la cámara.');}
+function editorCloseMode(){editorOpen=false;$('editorPanel').style.display='none';editorFloor.visible=false;editorGrid.visible=false;arenaVis.forEach(o=>o.visible=true);PM.forEach(o=>o.visible=true);GM.forEach((o,i)=>o.visible=i===cur);menu('MONOKILL','Editor cerrado. Elige un modo para jugar.',0)}
+$('openEditor').addEventListener('click',editorOpenMode);$('closeEditor').addEventListener('click',editorCloseMode);
+$('addObject').addEventListener('click',()=>editorAdd($('editorType').value));$('objectList').addEventListener('change',e=>editorPick(e.target.value));['objX','objY','objZ','objScale'].forEach(id=>$(id).addEventListener('change',editorTransform));
+$('deleteObject').addEventListener('click',()=>{if(!editorSelected)return;S.remove(editorSelected);editorObjects.splice(editorObjects.indexOf(editorSelected),1);editorSelected=null;editorRefreshList();editorSay('Elemento eliminado.')});
+$('duplicateObject').addEventListener('click',()=>{if(!editorSelected)return;const o=editorSelected;editorAdd(o.userData.editorType,{x:o.position.x+2,y:o.position.y,z:o.position.z+2,scale:o.scale.x,rotation:o.rotation.y,name:o.userData.editorName+' copia'})});
+$('moveLeft').onclick=()=>{if(editorSelected){editorSelected.position.x-=1;editorPick(editorSelected.userData.editorId)}};$('moveRight').onclick=()=>{if(editorSelected){editorSelected.position.x+=1;editorPick(editorSelected.userData.editorId)}};$('moveForward').onclick=()=>{if(editorSelected){editorSelected.position.z-=1;editorPick(editorSelected.userData.editorId)}};$('moveBack').onclick=()=>{if(editorSelected){editorSelected.position.z+=1;editorPick(editorSelected.userData.editorId)}};$('rotateLeft').onclick=()=>{if(editorSelected){editorSelected.rotation.y-=Math.PI/12;editorPick(editorSelected.userData.editorId)}};$('rotateRight').onclick=()=>{if(editorSelected){editorSelected.rotation.y+=Math.PI/12;editorPick(editorSelected.userData.editorId)}};
+$('saveMap').onclick=editorExport;$('loadMapButton').onclick=()=>$('loadMapFile').click();$('loadMapFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{editorImportData(JSON.parse(await file.text()),true)}catch(err){editorSay('No se pudo importar el mapa: '+err.message)}e.target.value=''});
+$('clearMap').onclick=()=>{editorClear();editorSay('Mapa vacío. Añade un suelo plano y marcadores de aparición.')};
+$('saveToLibrary').onclick=()=>{const map=editorData(),lib=getMapLibrary(),id='map_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);map.id=id;try{lib.push(map);localStorage.setItem('mk_map_library',JSON.stringify(lib));refreshLibrary(id);editorSay('Guardado: '+map.name+' ('+lib.length+' mapas en esta biblioteca).')}catch(e){editorSay('No se pudo guardar: el navegador se ha quedado sin espacio. Exporta el mapa como JSON para no perderlo.')}};
+$('loadSavedMap').onclick=()=>{const map=getMapLibrary().find(m=>m.id===$('savedMaps').value);if(!map){editorSay('Selecciona un mapa guardado.');return}try{editorImportData(map,true)}catch(e){editorSay('No se pudo cargar ese mapa: '+e.message)}};
+$('deleteSavedMap').onclick=()=>{const id=$('savedMaps').value;if(!id)return;const lib=getMapLibrary().filter(m=>m.id!==id);localStorage.setItem('mk_map_library',JSON.stringify(lib));refreshLibrary();editorSay('Mapa guardado eliminado de la biblioteca.')};
+$('testMap').onclick=()=>{trainingMode=false;activeMap=editorData();editorCloseMode();start(0);banner('MAPA: '+activeMap.name.toUpperCase())};
+const editorRaycaster=new THREE.Raycaster(),editorPointer=new THREE.Vector2();
+R.domElement.addEventListener('pointerdown',e=>{if(!editorOpen||e.button!==0)return;const rect=R.domElement.getBoundingClientRect();editorPointer.x=(e.clientX-rect.left)/rect.width*2-1;editorPointer.y=-(e.clientY-rect.top)/rect.height*2+1;editorRaycaster.setFromCamera(editorPointer,cam);const hits=editorRaycaster.intersectObjects(editorObjects,false);if(hits.length)editorPick(hits[0].object.userData.editorId)});
+R.domElement.addEventListener('mousedown',e=>{if(editorOpen&&e.button===2){editorLook=true;editorLastX=e.clientX;editorLastY=e.clientY;e.preventDefault()}});addEventListener('mouseup',e=>{if(e.button===2)editorLook=false});addEventListener('mousemove',e=>{if(!editorOpen||!editorLook)return;const dx=e.clientX-editorLastX,dy=e.clientY-editorLastY;editorLastX=e.clientX;editorLastY=e.clientY;editorCamYaw-=dx*.004;editorCamPitch=Math.max(-1.48,Math.min(1.2,editorCamPitch-dy*.004));cam.rotation.set(editorCamPitch,editorCamYaw,0)});
+addEventListener('wheel',e=>{if(editorOpen){editorCamSpeed=Math.max(3,Math.min(80,editorCamSpeed+(e.deltaY>0?-2:2)));e.preventDefault()}},{passive:false});
+addEventListener('keydown',e=>{if(editorOpen){editorCameraKeys[e.code]=true;if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault()}});addEventListener('keyup',e=>editorCameraKeys[e.code]=false);
+function updateEditorCamera(dt){if(!editorOpen)return;for(const o of editorObjects){if(o.userData.editorType.startsWith('enemy_')&&o!==editorSelected){o.position.y=o.userData.editorBaseY+Math.sin(performance.now()*.003+Number(o.userData.editorId.slice(-2)||0))*.18;o.rotation.y+=dt*.65}}const forward=new V(-Math.sin(editorCamYaw),0,-Math.cos(editorCamYaw)),right=new V(Math.cos(editorCamYaw),0,-Math.sin(editorCamYaw));if(editorCameraKeys.KeyW||editorCameraKeys.ArrowUp)cam.position.addScaledVector(forward,editorCamSpeed*dt);if(editorCameraKeys.KeyS||editorCameraKeys.ArrowDown)cam.position.addScaledVector(forward,-editorCamSpeed*dt);if(editorCameraKeys.KeyD||editorCameraKeys.ArrowRight)cam.position.addScaledVector(right,editorCamSpeed*dt);if(editorCameraKeys.KeyA||editorCameraKeys.ArrowLeft)cam.position.addScaledVector(right,-editorCamSpeed*dt);if(editorCameraKeys.KeyE||editorCameraKeys.Space)cam.position.y+=editorCamSpeed*dt;if(editorCameraKeys.KeyQ||editorCameraKeys.ControlLeft)cam.position.y-=editorCamSpeed*dt;cam.position.y=Math.max(1,Math.min(150,cam.position.y))}
+
+menu('MONOKILL','Elige un modo, ajusta la cámara y crea tu personaje. Se ve girando a la derecha.',0);
+let last=performance.now();
+(function loop(n){requestAnimationFrame(loop);const dt=Math.min(.05,(n-last)/1000);last=n;
+ if(playing&&!paused)step(dt);updateEditorCamera(dt);post(dt);R.render(S,cam)})(last);
+</script></body></html>
